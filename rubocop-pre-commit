@@ -1,0 +1,123 @@
+#! /usr/bin/env ruby
+
+# Run rubocop against the files being committed, fixing what we can.  Fixed offenses won't wind up
+# in the commit, though, so abort if we find any offenses.
+#
+# Offenses in unstaged changes will currently abort the commit, but could be avoided by comparing
+# the line number of the offense to those of the staged changes.
+
+require 'json'
+require 'open3'
+require 'pathname'
+
+class GitStatusLine
+  STATUSES = {
+    "A" => :added,
+    "B" => :pairing_broken,
+    "C" => :copied,
+    "D" => :deleted,
+    "M" => :modified,
+    "R" => :renamed,
+    "T" => :type_changed,
+    "U" => :unmerged,
+    "X" => :unknown
+  }
+
+  STATUS_LINE_REGEX = /^[#{STATUSES.keys.join("|")}]\s+/
+
+  def self.is_status_line?(line)
+    line =~ STATUS_LINE_REGEX
+  end
+
+  def self.from(line)
+    return nil unless is_status_line?(line)
+    new(line.chomp)
+  end
+
+  attr_reader :status
+  def initialize(line)
+    @line = line
+    @status = STATUSES[@line[0]]
+  end
+
+  def pathname
+    GitStatusPathname.new(@line.gsub(STATUS_LINE_REGEX, ''))
+  end
+
+  def added?
+    status == :added
+  end
+
+  def modified?
+    status == :modified
+  end
+end
+
+class GitStatusPathname
+  def initialize(filename)
+    @path = Pathname.new(filename)
+  end
+
+  def to_s
+    @path.to_s
+  end
+
+  def rubocopable?
+    ruby_file? && !in_vendor_dir?
+  end
+
+  def ruby_file?
+    @path.extname == ".rb"
+  end
+
+  def in_vendor_dir?
+    top_level == "vendor"
+  end
+
+  def top_level
+    @path.each_filename.first
+  end
+end
+
+class GitDiff
+  def self.status_lines
+    output = `git diff --cached --name-status`
+    output.lines.map{|l| GitStatusLine.from(l) }.compact
+  end
+end
+
+def changed_files
+  GitDiff.status_lines
+    .select{|f| f.added? || f.modified? }
+    .map(&:pathname)
+    .select(&:rubocopable?)
+end
+
+file_list = changed_files.join(" ")
+if file_list == ""
+  puts "No files to check."
+  exit(0)
+end
+
+puts "Running rubocop against #{file_list}"
+output, err, status = Open3.capture3("bin/rubocop --format json --display-cop-names --auto-correct #{file_list}")
+
+unless status.success?
+  puts "Error executing Rubocop."
+  puts err
+  exit(1)
+end
+
+json = JSON.parse(output)
+puts json.inspect
+
+offenses = json["summary"]["offense_count"]
+exit(0) if offenses == 0
+
+puts "Rubocop found #{offenses} offenses.  Aborting commit."
+uncorrected = json["files"].flat_map do |file|
+  file["offenses"].count{|offense| !offense["corrected"] }
+end.reduce(:+)
+puts "All offenses corrected." if uncorrected == 0
+
+exit(1)
