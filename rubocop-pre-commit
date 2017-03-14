@@ -113,7 +113,7 @@ json = JSON.parse(output)
 offenses = json["summary"]["offense_count"]
 exit(0) if offenses == 0
 
-puts "Rubocop found #{offenses} offenses.  Aborting commit."
+puts "Rubocop found #{offenses} offense#{"s" if offenses > 1}.  Aborting commit."
 clean = true
 json["files"].each do |file|
   path = file["path"]
