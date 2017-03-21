@@ -62,20 +62,8 @@ class GitStatusPathname
     @path.to_s
   end
 
-  def rubocopable?
-    ruby_file? && !in_vendor_dir?
-  end
-
-  def ruby_file?
+  def ruby?
     @path.extname == ".rb"
-  end
-
-  def in_vendor_dir?
-    top_level == "vendor"
-  end
-
-  def top_level
-    @path.each_filename.first
   end
 end
 
@@ -90,7 +78,7 @@ def changed_files
   GitDiff.status_lines
     .select{|f| f.added? || f.modified? }
     .map(&:pathname)
-    .select(&:rubocopable?)
+    .select(&:ruby?)
 end
 
 file_list = changed_files.join(" ")
