@@ -105,9 +105,10 @@ puts "Rubocop found #{offenses} offense#{"s" if offenses > 1}.  Aborting commit.
 clean = true
 json["files"].each do |file|
   path = file["path"]
-  file["offenses"].each do |offense|
-    next if offense["corrected"]
-    clean = false
+  uncorrected = file["offenses"].reject{|offense| offense["corrected"] }
+  clean &&= uncorrected.empty?
+
+  uncorrected.each do |offense|
     line = offense["location"]["line"]
     message = offense["message"]
     puts "#{path}:#{line} #{message}"
