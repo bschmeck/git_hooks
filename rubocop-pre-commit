@@ -88,7 +88,7 @@ if file_list == ""
 end
 
 puts "Running rubocop against #{file_list}"
-output, err, status = Open3.capture3("bin/rubocop --format json --force-exclusion --display-cop-names --auto-correct #{file_list}")
+output, err, status = Open3.capture3("bundle exec rubocop --format json --force-exclusion --display-cop-names --auto-correct #{file_list}")
 
 unless err.empty?
   puts "Error executing Rubocop."
