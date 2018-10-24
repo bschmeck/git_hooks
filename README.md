@@ -14,6 +14,8 @@ Rubocop found 13 offenses.  Aborting commit.
 spec/example_repo/example_spec.rb:9 Metrics/LineLength: Line is too long. [125/100]
 ```
 
+[More details.](http://blog.s10r.com/2017/04/12/rubocop-git-hook.html)
+
 #### Installation
 
 1. Clone this repo
