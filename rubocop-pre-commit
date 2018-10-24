@@ -64,7 +64,8 @@ class GitStatusPathname
 
   def ruby?
     @path.extname == ".rb" ||
-      @path.extname == ".rake"
+      @path.extname == ".rake" ||
+      @path.basename == "Gemfile"
   end
 end
 
