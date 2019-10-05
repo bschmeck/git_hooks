@@ -83,6 +83,10 @@ def changed_files
     .select(&:ruby?)
 end
 
+def failure?(err)
+  !(err.empty? || err.include?("Parser::Source::Rewriter"))
+end
+
 file_list = changed_files.join(" ")
 if file_list == ""
   puts "No files to check."
@@ -92,7 +96,7 @@ end
 puts "Running rubocop against #{file_list}"
 output, err, status = Open3.capture3("bundle exec rubocop --format json --force-exclusion --display-cop-names --auto-correct #{file_list}")
 
-unless err.empty?
+if failure?(err)
   puts "Error executing Rubocop."
   puts err
   exit(1)
