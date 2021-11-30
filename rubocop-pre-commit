@@ -84,7 +84,7 @@ def changed_files
 end
 
 def failure?(err)
-  !(err.empty? || err.include?("Parser::Source::Rewriter"))
+  !(err.empty? || err.include?("Parser::Source::Rewriter") || err.include?("warning: parser/current"))
 end
 
 file_list = changed_files.join(" ")
