@@ -1,0 +1,13 @@
+#! /usr/bin/env ruby
+
+require 'open3'
+
+# Run mix format against the repo.  Fixed offenses won't wind up in the commit,
+# though, so abort if we find any offenses.
+
+puts "Running mix format --check-formatted"
+output, err, status = Open3.capture3("mix format --check-formatted")
+
+`mix format`
+
+exit(status.exitstatus)
